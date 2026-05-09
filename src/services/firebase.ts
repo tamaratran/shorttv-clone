@@ -8,6 +8,12 @@ import {
   type StorageReference,
   type FirebaseStorage,
 } from "firebase/storage";
+import {
+  getFirestore,
+  type Firestore,
+} from "firebase/firestore";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFunctions, type Functions } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -21,8 +27,11 @@ const firebaseConfig = {
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const storage: FirebaseStorage = getStorage(app);
+const db: Firestore = getFirestore(app);
+const auth: Auth = getAuth(app);
+const functions: Functions = getFunctions(app);
 
-export { app, storage };
+export { app, storage, db, auth, functions };
 
 export function getStorageRef(path: string): StorageReference {
   return ref(storage, path);

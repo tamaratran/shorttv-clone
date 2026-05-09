@@ -1,13 +1,26 @@
-import Link from "next/link";
-import { getAllDramas } from "@/data/dramas";
+"use client";
 
-export const metadata = {
-  title: "All Dramas - ShortMax",
-  description: "Explore all short drama genres on ShortMax.",
-};
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { fetchVideos, type VideoDoc } from "@/services/firestore";
 
 export default function DramasPage() {
-  const dramas = getAllDramas();
+  const [dramas, setDramas] = useState<VideoDoc[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchVideos({ limitCount: 100 })
+      .then(setDramas)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -28,7 +41,10 @@ export default function DramasPage() {
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={drama.cover}
+                  src={
+                    drama.coverUrl ||
+                    `https://picsum.photos/seed/${drama.slug}/300/450`
+                  }
                   alt={drama.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
