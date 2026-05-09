@@ -10,6 +10,7 @@ export interface Drama {
   freeEpisodes: number;
   views: string;
   likes: string;
+  rating: number;
 }
 
 export interface Genre {
@@ -39,6 +40,7 @@ export const featuredDramas: Drama[] = [
     freeEpisodes: 4,
     views: "2.1M",
     likes: "890K",
+    rating: 9.2,
   },
   {
     id: "2",
@@ -53,6 +55,7 @@ export const featuredDramas: Drama[] = [
     freeEpisodes: 5,
     views: "1.8M",
     likes: "720K",
+    rating: 8.8,
   },
   {
     id: "3",
@@ -67,6 +70,7 @@ export const featuredDramas: Drama[] = [
     freeEpisodes: 4,
     views: "1.5M",
     likes: "650K",
+    rating: 8.5,
   },
   {
     id: "4",
@@ -81,6 +85,7 @@ export const featuredDramas: Drama[] = [
     freeEpisodes: 4,
     views: "2.4M",
     likes: "1.1M",
+    rating: 9.4,
   },
   {
     id: "5",
@@ -95,6 +100,7 @@ export const featuredDramas: Drama[] = [
     freeEpisodes: 4,
     views: "1.2M",
     likes: "480K",
+    rating: 8.7,
   },
   {
     id: "6",
@@ -109,6 +115,7 @@ export const featuredDramas: Drama[] = [
     freeEpisodes: 5,
     views: "3.2M",
     likes: "1.5M",
+    rating: 9.1,
   },
 ];
 
@@ -129,6 +136,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "320K",
         likes: "145K",
+    rating: 8.3,
       },
       {
         id: "11",
@@ -141,6 +149,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "410K",
         likes: "189K",
+    rating: 8.6,
       },
       {
         id: "12",
@@ -153,6 +162,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "280K",
         likes: "130K",
+    rating: 8.9,
       },
       {
         id: "13",
@@ -165,6 +175,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "350K",
         likes: "160K",
+    rating: 8.4,
       },
       {
         id: "14",
@@ -177,6 +188,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "500K",
         likes: "220K",
+    rating: 8.8,
       },
       {
         id: "15",
@@ -189,6 +201,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "240K",
         likes: "110K",
+    rating: 9,
       },
       {
         id: "16",
@@ -201,6 +214,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "310K",
         likes: "140K",
+    rating: 8.5,
       },
     ],
   },
@@ -226,6 +240,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "890K",
         likes: "380K",
+    rating: 9.1,
       },
       {
         id: "21",
@@ -238,6 +253,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "720K",
         likes: "310K",
+    rating: 8.7,
       },
       {
         id: "22",
@@ -250,6 +266,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "650K",
         likes: "280K",
+    rating: 8.4,
       },
       {
         id: "23",
@@ -262,6 +279,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "580K",
         likes: "250K",
+    rating: 8.6,
       },
       {
         id: "24",
@@ -274,6 +292,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "430K",
         likes: "190K",
+    rating: 8.2,
       },
     ],
   },
@@ -293,6 +312,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "780K",
         likes: "340K",
+    rating: 8.8,
       },
       {
         id: "31",
@@ -305,6 +325,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "920K",
         likes: "410K",
+    rating: 9,
       },
       {
         id: "32",
@@ -317,6 +338,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "850K",
         likes: "370K",
+    rating: 8.6,
       },
       {
         id: "33",
@@ -329,6 +351,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "1.1M",
         likes: "480K",
+    rating: 9.2,
       },
       {
         id: "34",
@@ -341,6 +364,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "960K",
         likes: "420K",
+    rating: 8.9,
       },
     ],
   },
@@ -360,6 +384,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "780K",
         likes: "340K",
+    rating: 8.7,
       },
       {
         id: "41",
@@ -372,6 +397,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "620K",
         likes: "270K",
+    rating: 8.5,
       },
       {
         id: "42",
@@ -384,6 +410,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "710K",
         likes: "310K",
+    rating: 8.8,
       },
       {
         id: "43",
@@ -396,6 +423,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "560K",
         likes: "240K",
+    rating: 8.3,
       },
       {
         id: "44",
@@ -408,6 +436,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "680K",
         likes: "290K",
+    rating: 8.6,
       },
     ],
   },
@@ -427,6 +456,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "450K",
         likes: "200K",
+    rating: 9,
       },
       {
         id: "51",
@@ -439,6 +469,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "580K",
         likes: "250K",
+    rating: 8.4,
       },
       {
         id: "52",
@@ -451,6 +482,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "520K",
         likes: "230K",
+    rating: 8.7,
       },
       {
         id: "53",
@@ -463,6 +495,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "490K",
         likes: "210K",
+    rating: 8.3,
       },
     ],
   },
@@ -482,6 +515,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "481K",
         likes: "160K",
+    rating: 8.5,
       },
       {
         id: "61",
@@ -494,6 +528,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "620K",
         likes: "270K",
+    rating: 8.8,
       },
       {
         id: "62",
@@ -506,6 +541,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "1.2M",
         likes: "480K",
+    rating: 8.7,
       },
       {
         id: "63",
@@ -518,6 +554,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "1.5M",
         likes: "650K",
+    rating: 9.1,
       },
     ],
   },
@@ -537,6 +574,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "1.3M",
         likes: "560K",
+    rating: 9.3,
       },
       {
         id: "71",
@@ -549,6 +587,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "980K",
         likes: "430K",
+    rating: 8.6,
       },
       {
         id: "72",
@@ -561,6 +600,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "1.1M",
         likes: "480K",
+    rating: 9,
       },
     ],
   },
@@ -580,6 +620,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "670K",
         likes: "290K",
+    rating: 8.4,
       },
       {
         id: "81",
@@ -592,6 +633,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "540K",
         likes: "230K",
+    rating: 8.7,
       },
       {
         id: "82",
@@ -604,6 +646,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "480K",
         likes: "210K",
+    rating: 8.2,
       },
     ],
   },
@@ -623,6 +666,7 @@ export const genres: Genre[] = [
         freeEpisodes: 5,
         views: "1.4M",
         likes: "610K",
+    rating: 9.2,
       },
       {
         id: "91",
@@ -635,6 +679,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "820K",
         likes: "360K",
+    rating: 8.9,
       },
       {
         id: "92",
@@ -647,6 +692,7 @@ export const genres: Genre[] = [
         freeEpisodes: 4,
         views: "560K",
         likes: "240K",
+    rating: 8.5,
       },
     ],
   },
