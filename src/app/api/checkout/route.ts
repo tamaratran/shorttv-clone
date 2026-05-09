@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
             quantity: 1,
           },
         ],
+        adaptive_pricing: { enabled: false },
         metadata: {
           type: "coin_purchase",
           packageId: pkg.id,
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
             quantity: 1,
           },
         ],
+        adaptive_pricing: { enabled: false },
         metadata: {
           type: "vip_subscription",
           planId: plan.id,
