@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { PaywallModal } from "@/components/PaywallModal";
+import { useCoins } from "@/context/CoinContext";
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 const TOTAL_DURATION = 148; // 2:28 in seconds
+const EPISODE_COST = 60;
 
 interface VideoPlayerProps {
   dramaTitle: string;
@@ -23,11 +26,16 @@ function formatTime(seconds: number): string {
 export function VideoPlayer({
   dramaTitle,
   episode,
-  locked,
+  locked: initialLocked,
   cover,
   slug,
   totalEpisodes,
 }: VideoPlayerProps) {
+  const { isVip } = useCoins();
+  const [unlocked, setUnlocked] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const locked = initialLocked && !isVip && !unlocked;
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
@@ -133,10 +141,22 @@ export function VideoPlayer({
           <p className="text-white font-medium text-center px-4">
             Unlock this episode with coins
           </p>
-          <button className="bg-[#e50914] text-white px-6 py-2 rounded-full font-medium hover:bg-[#c40812] transition-colors">
-            Unlock (50 coins)
+          <button
+            onClick={() => setShowPaywall(true)}
+            className="bg-[#e50914] text-white px-6 py-2 rounded-full font-medium hover:bg-[#c40812] transition-colors"
+          >
+            Unlock ({EPISODE_COST} coins)
           </button>
         </div>
+      )}
+
+      {/* Paywall modal */}
+      {showPaywall && (
+        <PaywallModal
+          episodeCost={EPISODE_COST}
+          onClose={() => setShowPaywall(false)}
+          onUnlocked={() => setUnlocked(true)}
+        />
       )}
 
       {/* Play overlay */}
