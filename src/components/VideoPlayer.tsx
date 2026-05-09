@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+
+const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+const TOTAL_DURATION = 148; // 2:28 in seconds
 
 interface VideoPlayerProps {
   dramaTitle: string;
   episode: number;
   locked: boolean;
   cover: string;
+  slug: string;
+  totalEpisodes: number;
+}
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 export function VideoPlayer({
@@ -14,12 +25,94 @@ export function VideoPlayer({
   episode,
   locked,
   cover,
+  slug,
+  totalEpisodes,
 }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showShareToast, setShowShareToast] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const currentTime = (progress / 100) * TOTAL_DURATION;
+
+  const clearTimer = useCallback(() => {
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+      progressInterval.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying && !locked) {
+      clearTimer();
+      progressInterval.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) {
+            clearTimer();
+            setIsPlaying(false);
+            return 100;
+          }
+          return prev + (speed * 100) / TOTAL_DURATION;
+        });
+      }, 1000);
+    } else {
+      clearTimer();
+    }
+    return clearTimer;
+  }, [isPlaying, speed, locked, clearTimer]);
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/episode/${slug}?ep=${episode}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${dramaTitle} - Episode ${episode}`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShowShareToast(true);
+        setTimeout(() => setShowShareToast(false), 2000);
+      }
+    } catch {
+      await navigator.clipboard.writeText(url);
+      setShowShareToast(true);
+      setTimeout(() => setShowShareToast(false), 2000);
+    }
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    setProgress(Math.max(0, Math.min(100, pct)));
+  };
+
+  const hasPrev = episode > 1;
+  const hasNext = episode < totalEpisodes;
 
   return (
-    <div className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden">
-      {/* Poster/Cover */}
+    <div
+      ref={containerRef}
+      className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={cover}
@@ -54,22 +147,215 @@ export function VideoPlayer({
           aria-label="Play video"
         >
           <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
-            <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-8 h-8 text-white ml-1"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           </div>
         </button>
       )}
 
-      {/* Episode label */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-        <p className="text-white text-lg font-semibold">Episode {episode}</p>
-        <div className="flex items-center gap-4 text-xs text-gray-300 mt-1">
-          <span>00:00 / 02:28</span>
-          <span>480P</span>
-          <span>1x</span>
+      {/* Playback controls (visible on hover when playing) */}
+      {!locked && isPlaying && (
+        <div
+          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+          onClick={() => setIsPlaying(false)}
+        >
+          <div className="w-14 h-14 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center">
+            <svg
+              className="w-7 h-7 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* Prev / Next episode navigation */}
+      {!locked && (
+        <>
+          {hasPrev && (
+            <a
+              href={`/episode/${slug}?ep=${episode - 1}`}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
+              aria-label="Previous episode"
+            >
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </a>
+          )}
+          {hasNext && (
+            <a
+              href={`/episode/${slug}?ep=${episode + 1}`}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
+              aria-label="Next episode"
+            >
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </a>
+          )}
+        </>
+      )}
+
+      {/* Bottom controls */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-8 pb-3 px-4">
+        {/* Progress bar */}
+        {!locked && (
+          <div
+            className="w-full h-1.5 bg-white/20 rounded-full mb-3 cursor-pointer group/bar"
+            onClick={handleProgressClick}
+          >
+            <div
+              className="h-full bg-[#e50914] rounded-full relative transition-all"
+              style={{ width: `${progress}%` }}
+            >
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-white text-lg font-semibold">
+              Episode {episode}
+            </p>
+            <div className="flex items-center gap-4 text-xs text-gray-300 mt-0.5">
+              <span>
+                {formatTime(currentTime)} / {formatTime(TOTAL_DURATION)}
+              </span>
+              <span>480P</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Speed selector */}
+            {!locked && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                  className="px-2.5 py-1 text-xs font-medium text-white bg-white/15 rounded-md hover:bg-white/25 transition-colors"
+                >
+                  {speed}x
+                </button>
+                {showSpeedMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-[#2a2a2a] border border-white/10 rounded-lg overflow-hidden shadow-xl">
+                    {SPEED_OPTIONS.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          setSpeed(s);
+                          setShowSpeedMenu(false);
+                        }}
+                        className={`block w-full px-4 py-2 text-sm text-left transition-colors ${
+                          speed === s
+                            ? "text-[#e50914] bg-white/10"
+                            : "text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {s}x
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Share button */}
+            <button
+              onClick={handleShare}
+              className="p-1.5 text-white/70 hover:text-white transition-colors"
+              aria-label="Share episode"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+            </button>
+
+            {/* Fullscreen toggle */}
+            {!locked && (
+              <button
+                onClick={toggleFullscreen}
+                className="p-1.5 text-white/70 hover:text-white transition-colors"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              >
+                {isFullscreen ? (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                    />
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Share toast */}
+      {showShareToast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-pulse">
+          Link copied!
+        </div>
+      )}
     </div>
   );
 }
