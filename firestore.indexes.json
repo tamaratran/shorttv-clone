@@ -26,6 +26,15 @@
       ]
     },
     {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "genreIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "views", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "watchHistory",
       "queryScope": "COLLECTION",
       "fields": [
