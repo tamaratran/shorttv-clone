@@ -27,7 +27,14 @@ const GENRE_DATA = [
   { id: "urban-fantasy", name: "Urban Fantasy", emoji: "\uD83C\uDF03", displayOrder: 20 },
 ];
 
-export const seedGenres = onCall(async () => {
+export const seedGenres = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be logged in");
+  }
+  if (!request.auth.token.admin) {
+    throw new HttpsError("permission-denied", "Admin access required");
+  }
+
   const batch = db.batch();
   const now = admin.firestore.FieldValue.serverTimestamp();
 
@@ -47,6 +54,13 @@ export const seedGenres = onCall(async () => {
 });
 
 export const seedVideoFromStorage = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be logged in");
+  }
+  if (!request.auth.token.admin) {
+    throw new HttpsError("permission-denied", "Admin access required");
+  }
+
   const { folderName, title, slug, genres, genreIds, featured = false } =
     request.data || {};
 

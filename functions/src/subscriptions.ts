@@ -9,6 +9,10 @@ export const addCoins = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Must be logged in");
   }
 
+  if (!request.auth.token.admin) {
+    throw new HttpsError("permission-denied", "Admin access required");
+  }
+
   const { amount, source = "purchase" } = request.data;
 
   if (!amount || typeof amount !== "number" || amount <= 0) {
@@ -169,6 +173,10 @@ export const upgradePlan = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Must be logged in");
   }
 
+  if (!request.auth.token.admin) {
+    throw new HttpsError("permission-denied", "Admin access required");
+  }
+
   const userRef = db.collection("users").doc(request.auth.uid);
   const userDoc = await userRef.get();
 
@@ -191,6 +199,10 @@ export const upgradePlan = onCall(async (request) => {
 export const downgradePlan = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Must be logged in");
+  }
+
+  if (!request.auth.token.admin) {
+    throw new HttpsError("permission-denied", "Admin access required");
   }
 
   const userRef = db.collection("users").doc(request.auth.uid);

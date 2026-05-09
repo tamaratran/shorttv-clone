@@ -20,36 +20,37 @@ export const updateWatchProgress = onCall(async (request) => {
 
   const historyId = `${request.auth.uid}_${videoId}_${episodeId}`;
   const completed = duration > 0 && progress >= duration * 0.9;
+  const historyRef = db.collection("watchHistory").doc(historyId);
 
-  await db
-    .collection("watchHistory")
-    .doc(historyId)
-    .set(
+  const result = await db.runTransaction(async (tx) => {
+    const historyDoc = await tx.get(historyRef);
+    const isFirstWatch = !historyDoc.exists || !historyDoc.data()?.viewCounted;
+
+    tx.set(
+      historyRef,
       {
-        userId: request.auth.uid,
+        userId: request.auth!.uid,
         videoId,
         episodeId,
         progress,
         duration,
         completed,
+        viewCounted: true,
         lastWatchedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
 
-  // Increment views on the video if this is the first watch
-  const historyDoc = await db.collection("watchHistory").doc(historyId).get();
-  const existingProgress = historyDoc.data()?.progress;
-  if (existingProgress === undefined || existingProgress === 0) {
-    await db
-      .collection("videos")
-      .doc(videoId)
-      .update({
+    if (isFirstWatch) {
+      tx.update(db.collection("videos").doc(videoId), {
         views: admin.firestore.FieldValue.increment(1),
       });
-  }
+    }
 
-  return { success: true, completed };
+    return { completed, isFirstWatch };
+  });
+
+  return { success: true, completed: result.completed };
 });
 
 export const getWatchHistory = onCall(async (request) => {
