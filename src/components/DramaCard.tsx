@@ -7,9 +7,9 @@ interface DramaCardProps {
 
 export function DramaCard({ drama }: DramaCardProps) {
   return (
-    <div className="flex-shrink-0 w-[140px] sm:w-[160px]">
+    <div className="flex-shrink-0 w-[140px] sm:w-[166px]">
       <Link href={`/episode/${drama.slug}`} className="block group">
-        <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
+        <div className="relative aspect-[2/3] overflow-hidden bg-[#2a2a2a]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={drama.cover}
@@ -46,7 +46,7 @@ export function DramaCard({ drama }: DramaCardProps) {
       </Link>
       <Link
         href={`/drama/${drama.slug}`}
-        className="block mt-2 text-sm text-gray-300 hover:text-white line-clamp-2 leading-tight transition-colors"
+        className="block mt-2 text-sm font-normal text-gray-300 hover:text-white line-clamp-2 leading-[1.4] transition-colors"
       >
         {drama.title}
       </Link>

@@ -28,12 +28,12 @@ export function HeroCarousel({ dramas }: HeroCarouselProps) {
         style={{ backgroundImage: `url(${drama.banner || drama.cover})` }}
       />
       {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#141414] via-[#141414]/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#141516] via-[#141516]/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#141516] via-transparent to-transparent" />
 
       {/* Content */}
       <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-12">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold max-w-md leading-tight mb-4">
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold max-w-lg leading-tight mb-4">
           {drama.title}
         </h2>
         <p className="text-gray-300 text-sm max-w-md mb-6 line-clamp-2">
@@ -41,7 +41,7 @@ export function HeroCarousel({ dramas }: HeroCarouselProps) {
         </p>
         <Link
           href={`/episode/${drama.slug}`}
-          className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-3 rounded-full w-fit hover:bg-gray-200 transition-colors"
+          className="inline-flex items-center gap-2 bg-white text-black font-bold text-xl px-10 py-2 rounded-full w-fit hover:bg-gray-200 transition-colors"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />

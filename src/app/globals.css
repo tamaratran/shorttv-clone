@@ -1,11 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #141414;
+  --background: #141516;
   --foreground: #ffffff;
-  --accent: #e50914;
+  --accent: #F6610F;
+  --accent-red: #e50914;
   --card-bg: #1a1a2e;
-  --header-bg: rgba(20, 20, 20, 0.95);
+  --header-bg: rgba(20, 21, 22, 0.95);
+  --nav-inactive: #CCCDD4;
+  --footer-bg: #1D1E20;
 }
 
 @theme inline {
@@ -13,14 +16,14 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-card-bg: var(--card-bg);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-montserrat);
+  --font-mono: var(--font-montserrat);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
 }
 
 /* Hide scrollbar for horizontal scroll containers */

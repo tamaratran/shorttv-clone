@@ -135,7 +135,7 @@ export function PaywallModal({ episodeCost, onClose, onUnlocked }: PaywallModalP
             <button
               onClick={handleUnlock}
               disabled={purchasing}
-              className="w-full py-3 rounded-xl font-bold text-lg bg-gradient-to-r from-[#e50914] to-[#ff4d4d] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full py-3 rounded-xl font-bold text-lg bg-gradient-to-r from-[#F6610F] to-[#FF8A3D] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {isVip ? "Unlock (VIP Free)" : `Unlock Episode (${episodeCost} coins)`}
             </button>
@@ -192,7 +192,7 @@ export function PaywallModal({ episodeCost, onClose, onUnlocked }: PaywallModalP
                   className="relative text-left p-4 rounded-xl bg-[#222] border border-white/10 hover:border-[#C5943A]/60 transition-colors disabled:opacity-50"
                 >
                   {pkg.bonus > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-[#e50914] text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                    <span className="absolute -top-2 -right-2 bg-[#F6610F] text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
                       +{pkg.bonus}%
                     </span>
                   )}

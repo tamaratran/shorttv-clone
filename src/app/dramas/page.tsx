@@ -19,13 +19,13 @@ export default function DramasPage() {
         <span className="text-white">All Dramas</span>
       </div>
 
-      <h1 className="text-2xl sm:text-3xl font-bold mb-8">All Dramas</h1>
+      <h1 className="text-[26px] sm:text-3xl font-bold mb-8">All Dramas</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
         {dramas.map((drama) => (
           <div key={drama.id}>
             <Link href={`/episode/${drama.slug}`} className="block group">
-              <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
+              <div className="relative aspect-[2/3] overflow-hidden bg-[#2a2a2a]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={drama.cover}
@@ -37,7 +37,7 @@ export default function DramasPage() {
             </Link>
             <Link
               href={`/drama/${drama.slug}`}
-              className="block mt-2 text-sm text-gray-300 hover:text-white line-clamp-2 leading-tight transition-colors"
+              className="block mt-2 text-sm font-normal text-gray-300 hover:text-white line-clamp-2 leading-[1.4] transition-colors"
             >
               {drama.title}
             </Link>

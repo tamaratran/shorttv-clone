@@ -57,7 +57,7 @@ export function EpisodeGrid({
                 onClick={() => handleEpisodeClick(epNum, true)}
                 className={`relative flex items-center justify-center h-10 rounded text-sm font-medium transition-colors ${
                   isCurrent
-                    ? "bg-[#e50914] text-white"
+                    ? "bg-[#F6610F] text-white"
                     : "bg-white/5 text-gray-500 hover:bg-white/10"
                 }`}
               >
@@ -81,7 +81,7 @@ export function EpisodeGrid({
               href={`/episode/${slug}?ep=${epNum}`}
               className={`relative flex items-center justify-center h-10 rounded text-sm font-medium transition-colors ${
                 isCurrent
-                  ? "bg-[#e50914] text-white"
+                  ? "bg-[#F6610F] text-white"
                   : "bg-white/10 text-white hover:bg-white/20"
               }`}
             >

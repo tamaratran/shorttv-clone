@@ -12,29 +12,29 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[#141414]/95 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <header className="sticky top-0 z-50 bg-[#141516]/95 backdrop-blur-sm border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-[68px]">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#e50914] rounded-lg flex items-center justify-center font-bold text-sm">
+              <div className="w-8 h-8 bg-[#F6610F] rounded-lg flex items-center justify-center font-bold text-sm">
                 S
               </div>
               <span className="text-xl font-bold tracking-tight">ShortMax</span>
             </Link>
-            <nav className="hidden md:flex items-center gap-6">
+            <nav className="hidden md:flex items-center gap-[60px]">
               <Link
                 href="/"
-                className="text-[#e50914] font-medium text-sm hover:text-[#e50914] transition-colors"
+                className="text-[#F6610F] font-bold text-lg hover:text-[#F6610F] transition-colors"
               >
                 Home
               </Link>
               <Link
                 href="/dramas"
-                className="text-gray-300 font-medium text-sm hover:text-white transition-colors"
+                className="text-[#CCCDD4] font-bold text-lg hover:text-white transition-colors"
               >
                 Dramas
               </Link>
-              <span className="text-gray-500 font-medium text-sm cursor-default">
+              <span className="text-[#CCCDD4]/50 font-bold text-lg cursor-default">
                 Download
               </span>
             </nav>
@@ -65,7 +65,7 @@ export function Header() {
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#2a2a2a] border border-white/10 rounded-full px-4 py-1.5 text-sm text-white placeholder-gray-500 w-48 focus:outline-none focus:border-[#e50914] transition-colors"
+                className="bg-transparent border border-white/20 rounded-full px-4 py-1.5 text-sm text-white placeholder-gray-500 w-44 focus:outline-none focus:border-[#F6610F] transition-colors"
               />
               <svg
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
