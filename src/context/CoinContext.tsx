@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from "react";
 
 interface CoinState {
   balance: number;
@@ -37,6 +37,8 @@ function saveState(state: CoinState) {
 
 export function CoinProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<CoinState>(loadState);
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; });
 
   const addCoins = useCallback((amount: number) => {
     setState((prev) => {
@@ -47,20 +49,18 @@ export function CoinProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const spendCoins = useCallback((amount: number): boolean => {
-    let success = false;
+    const cur = stateRef.current;
+    if (!cur.isVip && cur.balance < amount) return false;
     setState((prev) => {
-      if (prev.isVip || prev.balance >= amount) {
-        const next = {
-          ...prev,
-          balance: prev.isVip ? prev.balance : prev.balance - amount,
-        };
-        saveState(next);
-        success = true;
-        return next;
-      }
-      return prev;
+      if (!prev.isVip && prev.balance < amount) return prev;
+      const next = {
+        ...prev,
+        balance: prev.isVip ? prev.balance : prev.balance - amount,
+      };
+      saveState(next);
+      return next;
     });
-    return success;
+    return true;
   }, []);
 
   const activateVip = useCallback((plan: "weekly" | "yearly") => {

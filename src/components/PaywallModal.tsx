@@ -67,7 +67,11 @@ export function PaywallModal({ episodeCost, onClose, onUnlocked }: PaywallModalP
   const [purchasing, setPurchasing] = useState(false);
 
   const handleUnlock = () => {
-    if (isVip || spendCoins(episodeCost)) {
+    if (isVip) {
+      onUnlocked?.();
+      onClose();
+    } else if (balance >= episodeCost) {
+      spendCoins(episodeCost);
       onUnlocked?.();
       onClose();
     }
