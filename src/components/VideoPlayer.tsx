@@ -275,7 +275,7 @@ export function VideoPlayer({
       )}
 
       {/* Playback controls (visible on hover when playing) */}
-      {!locked && isPlaying && (
+      {!locked && isPlaying && !videoError && (
         <div
           className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
           onClick={togglePlay}
