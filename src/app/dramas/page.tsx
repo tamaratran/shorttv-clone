@@ -55,7 +55,7 @@ export default function DramasPage() {
     : sections;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
         <Link href="/" className="hover:text-white transition-colors">
           Home
@@ -67,13 +67,13 @@ export default function DramasPage() {
       <h1 className="text-[26px] sm:text-3xl font-bold mb-6">All Dramas</h1>
 
       {/* Genre filter pills */}
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="flex flex-wrap gap-2.5 mb-8">
         <button
           onClick={() => setActiveGenre(null)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+          className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
             activeGenre === null
               ? "bg-[#F6610F] text-white"
-              : "bg-white/10 text-gray-300 hover:bg-white/20"
+              : "bg-[#2a2a2e] border border-white/10 text-gray-200 hover:bg-[#3a3a3e]"
           }`}
         >
           All
@@ -84,10 +84,10 @@ export default function DramasPage() {
             onClick={() =>
               setActiveGenre(s.genre.id === activeGenre ? null : s.genre.id)
             }
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
               activeGenre === s.genre.id
                 ? "bg-[#F6610F] text-white"
-                : "bg-white/10 text-gray-300 hover:bg-white/20"
+                : "bg-[#2a2a2e] border border-white/10 text-gray-200 hover:bg-[#3a3a3e]"
             }`}
           >
             {s.genre.emoji} {s.genre.name}
@@ -106,14 +106,14 @@ export default function DramasPage() {
                 ({section.dramas.length})
               </span>
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
               {section.dramas.map((drama) => (
                 <div key={drama.id}>
                   <Link
                     href={`/episode/${drama.slug}`}
                     className="block group"
                   >
-                    <div className="relative aspect-[2/3] overflow-hidden bg-[#2a2a2a]">
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={
@@ -128,7 +128,7 @@ export default function DramasPage() {
                   </Link>
                   <Link
                     href={`/drama/${drama.slug}`}
-                    className="block mt-2 text-sm font-normal text-gray-300 hover:text-white line-clamp-2 leading-[1.4] transition-colors"
+                    className="block mt-2 text-[13px] text-white/90 hover:text-white line-clamp-2 leading-snug transition-colors"
                   >
                     {drama.title}
                   </Link>

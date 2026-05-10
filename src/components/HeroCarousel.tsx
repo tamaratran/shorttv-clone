@@ -32,7 +32,7 @@ export function HeroCarousel({ dramas }: HeroCarouselProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-[#141516] via-transparent to-transparent" />
 
       {/* Content */}
-      <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-12">
+      <div className="relative h-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-12">
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold max-w-lg leading-tight mb-4">
           {drama.title}
         </h2>
