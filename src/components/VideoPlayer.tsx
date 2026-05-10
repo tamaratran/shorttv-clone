@@ -51,6 +51,8 @@ export function VideoPlayer({
   const [videoError, setVideoError] = useState<string | null>(null);
   const [prevVideoUrl, setPrevVideoUrl] = useState(videoUrl);
   const [retryKey, setRetryKey] = useState(0);
+  const [blobSrc, setBlobSrc] = useState<string | null>(null);
+  const [useBlobFallback, setUseBlobFallback] = useState(false);
   const retryCountRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -63,14 +65,40 @@ export function VideoPlayer({
     setCurrentTime(0);
     setDuration(0);
     retryCountRef.current = 0;
+    setBlobSrc(null);
+    setUseBlobFallback(false);
   }
 
   const hasRealVideo = !!videoUrl && !locked;
+
+  // Blob fallback: fetch entire video when direct streaming fails
+  useEffect(() => {
+    if (!useBlobFallback || !videoUrl || locked) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    fetch(videoUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        if (!cancelled) {
+          objectUrl = URL.createObjectURL(blob);
+          setBlobSrc(objectUrl);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setVideoError('Failed to load video');
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [useBlobFallback, videoUrl, locked]);
 
   // Autoplay when video is available (unmuted preferred)
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid || !hasRealVideo) return;
+    // Wait for blob src if in fallback mode
+    if (useBlobFallback && !blobSrc) return;
     vid.muted = false;
     setIsMuted(false);
     vid.play().then(() => {
@@ -85,7 +113,7 @@ export function VideoPlayer({
         // Autoplay completely blocked — user will need to click play
       });
     });
-  }, [hasRealVideo, videoUrl, retryKey]);
+  }, [hasRealVideo, videoUrl, retryKey, blobSrc, useBlobFallback]);
 
   const handleTimeUpdate = useCallback(() => {
     const vid = videoRef.current;
@@ -179,10 +207,10 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {hasRealVideo && !videoError ? (
+      {hasRealVideo && !videoError && !(useBlobFallback && !blobSrc) ? (
         <video
           ref={videoRef}
-          src={videoUrl}
+          src={useBlobFallback ? blobSrc! : videoUrl}
           className="w-full h-full object-contain"
           playsInline
           autoPlay
@@ -195,10 +223,14 @@ export function VideoPlayer({
           onError={(e) => {
             const vid = e.currentTarget;
             const err = vid.error;
-            if (retryCountRef.current < 3) {
+            if (!useBlobFallback && retryCountRef.current < 2) {
               retryCountRef.current += 1;
               vid.load();
               vid.play().catch(() => {});
+            } else if (!useBlobFallback) {
+              // Direct streaming failed — fall back to blob fetch
+              retryCountRef.current = 0;
+              setUseBlobFallback(true);
             } else {
               setVideoError(err ? `Error ${err.code}: ${err.message}` : 'Failed to load video');
             }
@@ -216,6 +248,13 @@ export function VideoPlayer({
           />
 
         </>
+      )}
+
+      {/* Blob loading spinner */}
+      {useBlobFallback && !blobSrc && !videoError && (
+        <div className="absolute inset-0 bg-black flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
       )}
 
       {/* Video error overlay */}
@@ -245,6 +284,8 @@ export function VideoPlayer({
               setCurrentTime(0);
               setSpeed(1);
               retryCountRef.current = 0;
+              setBlobSrc(null);
+              setUseBlobFallback(false);
               setRetryKey((k) => k + 1);
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
