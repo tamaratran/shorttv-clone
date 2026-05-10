@@ -39,6 +39,7 @@ export function VideoPlayer({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -46,9 +47,23 @@ export function VideoPlayer({
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const hasRealVideo = !!videoUrl && !locked;
+
+  // Autoplay when video is available
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid || !hasRealVideo) return;
+    vid.muted = true;
+    setIsMuted(true);
+    vid.play().then(() => {
+      setIsPlaying(true);
+    }).catch(() => {
+      // Autoplay blocked — user will need to click play
+    });
+  }, [hasRealVideo, videoUrl]);
 
   const handleTimeUpdate = useCallback(() => {
     const vid = videoRef.current;
@@ -147,11 +162,20 @@ export function VideoPlayer({
           poster={cover}
           className="w-full h-full object-contain"
           playsInline
+          autoPlay
+          muted
+          crossOrigin="anonymous"
+          preload="auto"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
+          onError={(e) => {
+            const vid = e.currentTarget;
+            const err = vid.error;
+            setVideoError(err ? `Error ${err.code}: ${err.message}` : 'Failed to load video');
+          }}
         />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
@@ -193,8 +217,31 @@ export function VideoPlayer({
         />
       )}
 
+      {/* Video error overlay */}
+      {videoError && !locked && (
+        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3">
+          <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-white/80 text-sm text-center px-4">{videoError}</p>
+          <button
+            onClick={() => {
+              setVideoError(null);
+              const vid = videoRef.current;
+              if (vid) {
+                vid.load();
+                vid.play().catch(() => {});
+              }
+            }}
+            className="px-4 py-2 bg-[#F6610F] text-white rounded-full text-sm font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Play overlay */}
-      {!locked && !isPlaying && (
+      {!locked && !isPlaying && !videoError && (
         <button
           onClick={togglePlay}
           className="absolute inset-0 flex items-center justify-center"
@@ -309,6 +356,32 @@ export function VideoPlayer({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Mute/Unmute button */}
+            {!locked && hasRealVideo && (
+              <button
+                onClick={() => {
+                  const vid = videoRef.current;
+                  if (vid) {
+                    vid.muted = !vid.muted;
+                    setIsMuted(vid.muted);
+                  }
+                }}
+                className="p-1.5 text-white/70 hover:text-white transition-colors"
+                aria-label={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                )}
+              </button>
+            )}
+
             {/* Speed selector */}
             {!locked && (
               <div className="relative">
