@@ -16,12 +16,12 @@ export function GenreRow({ genre }: GenreRowProps) {
   };
 
   return (
-    <section className="py-4">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-5">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl sm:text-[26px] font-bold flex items-center gap-2">
-            {genre.name}{" "}
-            <span className="text-lg">{genre.emoji}</span>
+          <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+            <span>{genre.emoji}</span>
+            {genre.name}
           </h2>
           <button
             onClick={scrollRight}
@@ -45,7 +45,7 @@ export function GenreRow({ genre }: GenreRowProps) {
         </div>
         <div
           ref={scrollRef}
-          className="flex gap-3 sm:gap-4 overflow-x-auto hide-scrollbar pb-2"
+          className="flex gap-4 overflow-x-auto hide-scrollbar pb-2"
         >
           {genre.dramas.map((drama) => (
             <DramaCard key={drama.id} drama={drama} />
