@@ -60,15 +60,39 @@ export function VideoPlayer({
     setProgress(0);
     setCurrentTime(0);
     setDuration(0);
-    retryCountRef.current = 0;
   }
 
   const hasRealVideo = !!videoUrl && !locked;
+  const [blobSrc, setBlobSrc] = useState<string | null>(null);
+
+  // Fetch video as blob to avoid streaming errors
+  useEffect(() => {
+    if (!videoUrl || locked) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    retryCountRef.current = 0;
+    fetch(videoUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        if (!cancelled) {
+          objectUrl = URL.createObjectURL(blob);
+          setBlobSrc(objectUrl);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBlobSrc(videoUrl);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setBlobSrc(null);
+    };
+  }, [videoUrl, locked]);
 
   // Autoplay when video is available
   useEffect(() => {
     const vid = videoRef.current;
-    if (!vid || !hasRealVideo) return;
+    if (!vid || !hasRealVideo || !blobSrc) return;
     vid.muted = true;
     setIsMuted(true);
     vid.play().then(() => {
@@ -76,7 +100,7 @@ export function VideoPlayer({
     }).catch(() => {
       // Autoplay blocked — user will need to click play
     });
-  }, [hasRealVideo, videoUrl]);
+  }, [hasRealVideo, blobSrc]);
 
   const handleTimeUpdate = useCallback(() => {
     const vid = videoRef.current;
@@ -170,11 +194,10 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {hasRealVideo && !videoError ? (
+      {hasRealVideo && blobSrc && !videoError ? (
         <video
           ref={videoRef}
-          src={videoUrl}
-          poster={cover}
+          src={blobSrc}
           className="w-full h-full object-contain"
           playsInline
           autoPlay
@@ -199,12 +222,19 @@ export function VideoPlayer({
           }}
         />
       ) : (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={cover}
-          alt={`${dramaTitle} Episode ${episode}`}
-          className="w-full h-full object-cover"
-        />
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cover}
+            alt={`${dramaTitle} Episode ${episode}`}
+            className="w-full h-full object-cover"
+          />
+          {hasRealVideo && !blobSrc && !videoError && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+          )}
+        </>
       )}
 
       {/* Video error overlay */}
@@ -234,10 +264,13 @@ export function VideoPlayer({
               setCurrentTime(0);
               setSpeed(1);
               retryCountRef.current = 0;
-              const vid = videoRef.current;
-              if (vid) {
-                vid.load();
-                vid.play().catch(() => {});
+              setBlobSrc(null);
+              // Re-fetch the video as blob
+              if (videoUrl) {
+                fetch(videoUrl)
+                  .then((res) => res.blob())
+                  .then((blob) => setBlobSrc(URL.createObjectURL(blob)))
+                  .catch(() => setBlobSrc(videoUrl));
               }
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
