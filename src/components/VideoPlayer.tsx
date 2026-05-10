@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { useCoins } from "@/context/CoinContext";
@@ -63,36 +64,11 @@ export function VideoPlayer({
   }
 
   const hasRealVideo = !!videoUrl && !locked;
-  const [blobSrc, setBlobSrc] = useState<string | null>(null);
-
-  // Fetch video as blob to avoid streaming errors
-  useEffect(() => {
-    if (!videoUrl || locked) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
-    retryCountRef.current = 0;
-    fetch(videoUrl)
-      .then((res) => res.blob())
-      .then((blob) => {
-        if (!cancelled) {
-          objectUrl = URL.createObjectURL(blob);
-          setBlobSrc(objectUrl);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setBlobSrc(videoUrl);
-      });
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      setBlobSrc(null);
-    };
-  }, [videoUrl, locked]);
 
   // Autoplay when video is available (unmuted preferred)
   useEffect(() => {
     const vid = videoRef.current;
-    if (!vid || !hasRealVideo || !blobSrc) return;
+    if (!vid || !hasRealVideo) return;
     vid.muted = false;
     setIsMuted(false);
     vid.play().then(() => {
@@ -107,7 +83,7 @@ export function VideoPlayer({
         // Autoplay completely blocked — user will need to click play
       });
     });
-  }, [hasRealVideo, blobSrc]);
+  }, [hasRealVideo, videoUrl]);
 
   const handleTimeUpdate = useCallback(() => {
     const vid = videoRef.current;
@@ -201,14 +177,14 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {hasRealVideo && blobSrc && !videoError ? (
+      {hasRealVideo && !videoError ? (
         <video
           ref={videoRef}
-          src={blobSrc}
+          src={videoUrl}
           className="w-full h-full object-contain"
           playsInline
           autoPlay
-          preload="metadata"
+          preload="auto"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
@@ -228,17 +204,15 @@ export function VideoPlayer({
         />
       ) : (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={cover}
             alt={`${dramaTitle} Episode ${episode}`}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="object-cover"
+            priority
           />
-          {hasRealVideo && !blobSrc && !videoError && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-            </div>
-          )}
+
         </>
       )}
 
@@ -269,13 +243,11 @@ export function VideoPlayer({
               setCurrentTime(0);
               setSpeed(1);
               retryCountRef.current = 0;
-              setBlobSrc(null);
-              // Re-fetch the video as blob
-              if (videoUrl) {
-                fetch(videoUrl)
-                  .then((res) => res.blob())
-                  .then((blob) => setBlobSrc(URL.createObjectURL(blob)))
-                  .catch(() => setBlobSrc(videoUrl));
+              // Retry by reloading the video element
+              const vid = videoRef.current;
+              if (vid) {
+                vid.load();
+                vid.play().catch(() => {});
               }
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"

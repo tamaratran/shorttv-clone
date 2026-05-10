@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, use } from "react";
 import { fetchVideoBySlug, type VideoDoc } from "@/services/firestore";
@@ -51,15 +52,17 @@ export default function DramaDetailPage({
 
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="flex-shrink-0 w-48 sm:w-56">
-          <div className="aspect-[2/3] overflow-hidden bg-[#2a2a2a]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="relative aspect-[2/3] overflow-hidden bg-[#2a2a2a]">
+            <Image
               src={
                 video.coverUrl ||
                 `https://picsum.photos/seed/${video.slug}/300/450`
               }
               alt={video.title}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 640px) 192px, 224px"
+              className="object-cover"
+              priority
             />
           </div>
         </div>

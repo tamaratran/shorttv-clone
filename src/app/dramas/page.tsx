@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -23,14 +24,15 @@ export default function DramasPage() {
     async function load() {
       try {
         const genres = await fetchGenres();
-        const genreSections: GenreSection[] = [];
-
-        for (const genre of genres) {
-          const dramas = await fetchVideosByGenre(genre.id, 20);
-          if (dramas.length > 0) {
-            genreSections.push({ genre, dramas });
-          }
-        }
+        const results = await Promise.all(
+          genres.map(async (genre) => {
+            const dramas = await fetchVideosByGenre(genre.id, 20);
+            return { genre, dramas };
+          })
+        );
+        const genreSections: GenreSection[] = results
+          .filter((r) => r.dramas.length > 0)
+          .map((r) => ({ genre: r.genre, dramas: r.dramas }));
 
         setSections(genreSections);
       } catch (err) {
@@ -114,15 +116,15 @@ export default function DramasPage() {
                     className="block group"
                   >
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={
                           drama.coverUrl ||
                           `https://picsum.photos/seed/${drama.slug}/300/450`
                         }
                         alt={drama.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
+                        fill
+                        sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                   </Link>
