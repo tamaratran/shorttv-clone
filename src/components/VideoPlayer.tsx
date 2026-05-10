@@ -49,6 +49,7 @@ export function VideoPlayer({
   const [showShareToast, setShowShareToast] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [prevVideoUrl, setPrevVideoUrl] = useState(videoUrl);
+  const retryCountRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset playback state when video source changes (e.g. episode navigation)
@@ -59,6 +60,7 @@ export function VideoPlayer({
     setProgress(0);
     setCurrentTime(0);
     setDuration(0);
+    retryCountRef.current = 0;
   }
 
   const hasRealVideo = !!videoUrl && !locked;
@@ -177,7 +179,7 @@ export function VideoPlayer({
           playsInline
           autoPlay
           muted
-          preload="auto"
+          preload="metadata"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
@@ -186,7 +188,14 @@ export function VideoPlayer({
           onError={(e) => {
             const vid = e.currentTarget;
             const err = vid.error;
-            setVideoError(err ? `Error ${err.code}: ${err.message}` : 'Failed to load video');
+            if (retryCountRef.current < 3) {
+              retryCountRef.current += 1;
+              vid.muted = true;
+              vid.load();
+              vid.play().catch(() => {});
+            } else {
+              setVideoError(err ? `Error ${err.code}: ${err.message}` : 'Failed to load video');
+            }
           }}
         />
       ) : (
@@ -224,6 +233,7 @@ export function VideoPlayer({
               setProgress(0);
               setCurrentTime(0);
               setSpeed(1);
+              retryCountRef.current = 0;
               const vid = videoRef.current;
               if (vid) {
                 vid.load();
