@@ -155,7 +155,7 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {hasRealVideo ? (
+      {hasRealVideo && !videoError ? (
         <video
           ref={videoRef}
           src={videoUrl}
@@ -184,6 +184,44 @@ export function VideoPlayer({
           alt={`${dramaTitle} Episode ${episode}`}
           className="w-full h-full object-cover"
         />
+      )}
+
+      {/* Video error overlay */}
+      {videoError && !locked && (
+        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4">
+          <svg
+            className="w-12 h-12 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+            />
+          </svg>
+          <p className="text-gray-300 text-sm text-center px-4">
+            Video failed to load
+          </p>
+          <button
+            onClick={() => {
+              setVideoError(null);
+              setIsPlaying(false);
+              setProgress(0);
+              setCurrentTime(0);
+              const vid = videoRef.current;
+              if (vid) {
+                vid.load();
+                vid.play().catch(() => {});
+              }
+            }}
+            className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {/* Lock overlay */}
@@ -215,29 +253,6 @@ export function VideoPlayer({
           onClose={() => setShowPaywall(false)}
           onUnlocked={() => setUnlocked(true)}
         />
-      )}
-
-      {/* Video error overlay */}
-      {videoError && !locked && (
-        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3">
-          <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-          <p className="text-white/80 text-sm text-center px-4">{videoError}</p>
-          <button
-            onClick={() => {
-              setVideoError(null);
-              const vid = videoRef.current;
-              if (vid) {
-                vid.load();
-                vid.play().catch(() => {});
-              }
-            }}
-            className="px-4 py-2 bg-[#F6610F] text-white rounded-full text-sm font-medium"
-          >
-            Retry
-          </button>
-        </div>
       )}
 
       {/* Play overlay */}
