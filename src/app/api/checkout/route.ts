@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { stripe, COIN_PACKAGES, VIP_PLANS } from "@/lib/stripe";
+import { getStripe, COIN_PACKAGES, VIP_PLANS } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         return Response.json({ error: "Invalid package" }, { status: 400 });
       }
 
-      const session = await stripe.checkout.sessions.create({
+      const session = await getStripe().checkout.sessions.create({
         mode: "payment",
         line_items: [
           {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         return Response.json({ error: "Invalid plan" }, { status: 400 });
       }
 
-      const session = await stripe.checkout.sessions.create({
+      const session = await getStripe().checkout.sessions.create({
         mode: "subscription",
         line_items: [
           {
