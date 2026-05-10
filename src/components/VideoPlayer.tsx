@@ -50,6 +50,8 @@ export function VideoPlayer({
   const [videoError, setVideoError] = useState<string | null>(null);
   const [prevVideoUrl, setPrevVideoUrl] = useState(videoUrl);
   const retryCountRef = useRef(0);
+  const lastGoodTimeRef = useRef(0);
+  const seekTargetRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset playback state when video source changes (e.g. episode navigation)
@@ -62,14 +64,20 @@ export function VideoPlayer({
     setDuration(0);
   }
 
+  useEffect(() => {
+    retryCountRef.current = 0;
+    lastGoodTimeRef.current = 0;
+    seekTargetRef.current = 0;
+  }, [videoUrl]);
+
   const hasRealVideo = !!videoUrl && !locked;
-  const seekTargetRef = useRef(0);
 
   // Autoplay when video is available (unmuted preferred)
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid || !hasRealVideo) return;
     retryCountRef.current = 0;
+    lastGoodTimeRef.current = 0;
     seekTargetRef.current = 0;
     vid.muted = false;
     setIsMuted(false);
@@ -92,6 +100,11 @@ export function VideoPlayer({
     if (!vid || !vid.duration) return;
     setCurrentTime(vid.currentTime);
     setProgress((vid.currentTime / vid.duration) * 100);
+    // Successful playback — track position and reset retry counter
+    lastGoodTimeRef.current = vid.currentTime;
+    if (retryCountRef.current > 0) {
+      retryCountRef.current = 0;
+    }
   }, []);
 
   const handleLoadedMetadata = useCallback(() => {
@@ -190,7 +203,6 @@ export function VideoPlayer({
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={(e) => {
             handleLoadedMetadata();
-            // Seek past corrupt sections on reload
             if (seekTargetRef.current > 0) {
               e.currentTarget.currentTime = seekTargetRef.current;
             }
@@ -202,10 +214,10 @@ export function VideoPlayer({
             const vid = e.currentTarget;
             const err = vid.error;
             const isDecodeError = err?.code === MediaError.MEDIA_ERR_DECODE;
-            if (isDecodeError && retryCountRef.current < 5) {
+            if (isDecodeError && retryCountRef.current < 10) {
               retryCountRef.current += 1;
-              // Seek past corrupt keyframe interval (~10s per attempt)
-              seekTargetRef.current = retryCountRef.current * 10;
+              const base = Math.ceil(lastGoodTimeRef.current);
+              seekTargetRef.current = base + retryCountRef.current * 10;
               vid.load();
             } else if (!isDecodeError && retryCountRef.current < 3) {
               retryCountRef.current += 1;
@@ -254,6 +266,7 @@ export function VideoPlayer({
               setCurrentTime(0);
               setSpeed(1);
               retryCountRef.current = 0;
+              lastGoodTimeRef.current = 0;
               seekTargetRef.current = 0;
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
