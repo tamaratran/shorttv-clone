@@ -177,7 +177,6 @@ export function VideoPlayer({
           playsInline
           autoPlay
           muted
-          crossOrigin="anonymous"
           preload="auto"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
