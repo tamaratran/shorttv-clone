@@ -47,7 +47,18 @@ export function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [prevVideoUrl, setPrevVideoUrl] = useState(videoUrl);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Reset playback state when video source changes (e.g. episode navigation)
+  if (videoUrl !== prevVideoUrl) {
+    setPrevVideoUrl(videoUrl);
+    setVideoError(false);
+    setIsPlaying(false);
+    setProgress(0);
+    setCurrentTime(0);
+    setDuration(0);
+  }
 
   const hasRealVideo = !!videoUrl && !locked;
 
@@ -60,8 +71,10 @@ export function VideoPlayer({
 
   const handleLoadedMetadata = useCallback(() => {
     const vid = videoRef.current;
-    if (vid) setDuration(vid.duration);
-  }, []);
+    if (!vid) return;
+    setDuration(vid.duration);
+    vid.playbackRate = speed;
+  }, [speed]);
 
   useEffect(() => {
     const vid = videoRef.current;
@@ -189,6 +202,7 @@ export function VideoPlayer({
               setIsPlaying(false);
               setProgress(0);
               setCurrentTime(0);
+              setSpeed(1);
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
           >
