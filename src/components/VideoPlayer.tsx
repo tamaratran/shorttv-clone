@@ -46,6 +46,7 @@ export function VideoPlayer({
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const hasRealVideo = !!videoUrl && !locked;
@@ -140,7 +141,7 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {hasRealVideo ? (
+      {hasRealVideo && !videoError ? (
         <video
           ref={videoRef}
           src={videoUrl}
@@ -152,6 +153,7 @@ export function VideoPlayer({
           onEnded={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
+          onError={() => setVideoError(true)}
         />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
@@ -160,6 +162,39 @@ export function VideoPlayer({
           alt={`${dramaTitle} Episode ${episode}`}
           className="w-full h-full object-cover"
         />
+      )}
+
+      {/* Video error overlay */}
+      {videoError && !locked && (
+        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4">
+          <svg
+            className="w-12 h-12 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+            />
+          </svg>
+          <p className="text-gray-300 text-sm text-center px-4">
+            Video failed to load
+          </p>
+          <button
+            onClick={() => {
+              setVideoError(false);
+              setIsPlaying(false);
+              setProgress(0);
+              setCurrentTime(0);
+            }}
+            className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {/* Lock overlay */}
