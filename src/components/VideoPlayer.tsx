@@ -53,6 +53,7 @@ export function VideoPlayer({
   const [retryKey, setRetryKey] = useState(0);
   const [blobSrc, setBlobSrc] = useState<string | null>(null);
   const [useBlobFallback, setUseBlobFallback] = useState(false);
+  const blobFallbackRef = useRef(false);
   const retryCountRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +66,7 @@ export function VideoPlayer({
     setCurrentTime(0);
     setDuration(0);
     retryCountRef.current = 0;
+    blobFallbackRef.current = false;
     setBlobSrc(null);
     setUseBlobFallback(false);
   }
@@ -223,16 +225,18 @@ export function VideoPlayer({
           onError={(e) => {
             const vid = e.currentTarget;
             const err = vid.error;
-            if (!useBlobFallback && retryCountRef.current < 2) {
+            if (blobFallbackRef.current) {
+              // Ignore stale errors — blob fetch handles its own errors
+              return;
+            } else if (retryCountRef.current < 2) {
               retryCountRef.current += 1;
               vid.load();
               vid.play().catch(() => {});
-            } else if (!useBlobFallback) {
+            } else {
               // Direct streaming failed — fall back to blob fetch
               retryCountRef.current = 0;
+              blobFallbackRef.current = true;
               setUseBlobFallback(true);
-            } else {
-              setVideoError(err ? `Error ${err.code}: ${err.message}` : 'Failed to load video');
             }
           }}
         />
