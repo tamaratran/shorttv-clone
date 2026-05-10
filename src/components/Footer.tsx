@@ -2,11 +2,11 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="bg-[#0a0a0a] border-t border-white/10 mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="bg-[#1D1E20] border-t border-white/10 mt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-white font-semibold mb-4">Contact</h3>
+            <h3 className="text-white font-medium text-lg mb-4">Contact</h3>
             <p className="text-gray-400 text-sm">SHORTTV LIMITED</p>
             <p className="text-gray-400 text-sm mt-1">
               customerservice@shortmax.com
@@ -14,7 +14,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Legal</h3>
+            <h3 className="text-white font-medium text-lg mb-4">Legal</h3>
             <div className="flex flex-col gap-2">
               <Link
                 href="/privacy"
@@ -38,7 +38,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Community</h3>
+            <h3 className="text-white font-medium text-lg mb-4">Community</h3>
             <div className="flex items-center gap-4">
               <a
                 href="#"
@@ -71,7 +71,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Download</h3>
+            <h3 className="text-white font-medium text-lg mb-4">Download</h3>
             <div className="flex flex-col gap-2">
               <div className="bg-white/10 rounded-lg px-4 py-2 text-center text-sm text-gray-300">
                 App Store

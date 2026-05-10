@@ -64,7 +64,7 @@ export default function DramasPage() {
         <span className="text-white">All Dramas</span>
       </div>
 
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6">All Dramas</h1>
+      <h1 className="text-[26px] sm:text-3xl font-bold mb-6">All Dramas</h1>
 
       {/* Genre filter pills */}
       <div className="flex flex-wrap gap-2 mb-8">
@@ -72,7 +72,7 @@ export default function DramasPage() {
           onClick={() => setActiveGenre(null)}
           className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
             activeGenre === null
-              ? "bg-red-600 text-white"
+              ? "bg-[#F6610F] text-white"
               : "bg-white/10 text-gray-300 hover:bg-white/20"
           }`}
         >
@@ -86,7 +86,7 @@ export default function DramasPage() {
             }
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
               activeGenre === s.genre.id
-                ? "bg-red-600 text-white"
+                ? "bg-[#F6610F] text-white"
                 : "bg-white/10 text-gray-300 hover:bg-white/20"
             }`}
           >
@@ -113,7 +113,7 @@ export default function DramasPage() {
                     href={`/episode/${drama.slug}`}
                     className="block group"
                   >
-                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
+                    <div className="relative aspect-[2/3] overflow-hidden bg-[#2a2a2a]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={
@@ -128,7 +128,7 @@ export default function DramasPage() {
                   </Link>
                   <Link
                     href={`/drama/${drama.slug}`}
-                    className="block mt-2 text-sm text-gray-300 hover:text-white line-clamp-2 leading-tight transition-colors"
+                    className="block mt-2 text-sm font-normal text-gray-300 hover:text-white line-clamp-2 leading-[1.4] transition-colors"
                   >
                     {drama.title}
                   </Link>

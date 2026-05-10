@@ -177,7 +177,7 @@ export function VideoPlayer({
           </p>
           <button
             onClick={() => setShowPaywall(true)}
-            className="bg-[#e50914] text-white px-6 py-2 rounded-full font-medium hover:bg-[#c40812] transition-colors"
+            className="bg-[#F6610F] text-white px-6 py-2 rounded-full font-bold hover:bg-[#d9550d] transition-colors"
           >
             Unlock ({EPISODE_COST} coins)
           </button>
@@ -287,7 +287,7 @@ export function VideoPlayer({
             onClick={handleProgressClick}
           >
             <div
-              className="h-full bg-[#e50914] rounded-full relative transition-all"
+              className="h-full bg-[#F6610F] rounded-full relative transition-all"
               style={{ width: `${progress}%` }}
             >
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity" />
@@ -329,7 +329,7 @@ export function VideoPlayer({
                         }}
                         className={`block w-full px-4 py-2 text-sm text-left transition-colors ${
                           speed === s
-                            ? "text-[#e50914] bg-white/10"
+                            ? "text-[#F6610F] bg-white/10"
                             : "text-white hover:bg-white/10"
                         }`}
                       >

@@ -51,7 +51,7 @@ export default function DramaDetailPage({
 
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="flex-shrink-0 w-48 sm:w-56">
-          <div className="aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
+          <div className="aspect-[2/3] overflow-hidden bg-[#2a2a2a]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={
