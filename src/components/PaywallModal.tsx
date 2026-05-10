@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCoins } from "@/context/CoinContext";
 
 interface PaywallModalProps {
@@ -62,9 +62,16 @@ const CoinIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
 );
 
 export function PaywallModal({ episodeCost, onClose, onUnlocked }: PaywallModalProps) {
-  const { balance, isVip, addCoins, spendCoins, activateVip } = useCoins();
+  const { balance, isVip, spendCoins } = useCoins();
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>("quick");
   const [purchasing, setPurchasing] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (redirectUrl) {
+      window.location.assign(redirectUrl);
+    }
+  }, [redirectUrl]);
 
   const handleUnlock = () => {
     if (isVip) {
@@ -77,20 +84,46 @@ export function PaywallModal({ episodeCost, onClose, onUnlocked }: PaywallModalP
     }
   };
 
-  const handleBuyCoins = (pkg: CoinPackage) => {
+  const handleBuyCoins = async (pkg: CoinPackage) => {
     setPurchasing(true);
-    setTimeout(() => {
-      addCoins(pkg.coins);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packageId: pkg.id }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (data.url) {
+        setRedirectUrl(data.url);
+      } else {
+        console.error("Checkout error:", data.error);
+        setPurchasing(false);
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
       setPurchasing(false);
-    }, 600);
+    }
   };
 
-  const handleVipPurchase = (plan: "weekly" | "yearly") => {
+  const handleVipPurchase = async (plan: "weekly" | "yearly") => {
     setPurchasing(true);
-    setTimeout(() => {
-      activateVip(plan);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vipPlanId: plan }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (data.url) {
+        setRedirectUrl(data.url);
+      } else {
+        console.error("Checkout error:", data.error);
+        setPurchasing(false);
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
       setPurchasing(false);
-    }, 600);
+    }
   };
 
   return (

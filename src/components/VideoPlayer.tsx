@@ -5,7 +5,6 @@ import { PaywallModal } from "@/components/PaywallModal";
 import { useCoins } from "@/context/CoinContext";
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
-const TOTAL_DURATION = 148; // 2:28 in seconds
 const EPISODE_COST = 60;
 
 interface VideoPlayerProps {
@@ -15,6 +14,7 @@ interface VideoPlayerProps {
   cover: string;
   slug: string;
   totalEpisodes: number;
+  videoUrl?: string;
 }
 
 function formatTime(seconds: number): string {
@@ -30,48 +30,58 @@ export function VideoPlayer({
   cover,
   slug,
   totalEpisodes,
+  videoUrl,
 }: VideoPlayerProps) {
   const { isVip } = useCoins();
   const [unlocked, setUnlocked] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const locked = initialLocked && !isVip && !unlocked;
 
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const currentTime = (progress / 100) * TOTAL_DURATION;
+  const hasRealVideo = !!videoUrl && !locked;
 
-  const clearTimer = useCallback(() => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
-    }
+  const handleTimeUpdate = useCallback(() => {
+    const vid = videoRef.current;
+    if (!vid || !vid.duration) return;
+    setCurrentTime(vid.currentTime);
+    setProgress((vid.currentTime / vid.duration) * 100);
+  }, []);
+
+  const handleLoadedMetadata = useCallback(() => {
+    const vid = videoRef.current;
+    if (vid) setDuration(vid.duration);
   }, []);
 
   useEffect(() => {
-    if (isPlaying && !locked) {
-      clearTimer();
-      progressInterval.current = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearTimer();
-            setIsPlaying(false);
-            return 100;
-          }
-          return prev + (speed * 100) / TOTAL_DURATION;
-        });
-      }, 1000);
+    const vid = videoRef.current;
+    if (!vid) return;
+    vid.playbackRate = speed;
+  }, [speed]);
+
+  const togglePlay = useCallback(() => {
+    const vid = videoRef.current;
+    if (hasRealVideo && vid) {
+      if (vid.paused) {
+        vid.play().catch(() => {});
+        setIsPlaying(true);
+      } else {
+        vid.pause();
+        setIsPlaying(false);
+      }
     } else {
-      clearTimer();
+      setIsPlaying((prev) => !prev);
     }
-    return clearTimer;
-  }, [isPlaying, speed, locked, clearTimer]);
+  }, [hasRealVideo]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -94,7 +104,10 @@ export function VideoPlayer({
     const url = `${window.location.origin}/episode/${slug}?ep=${episode}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: `${dramaTitle} - Episode ${episode}`, url });
+        await navigator.share({
+          title: `${dramaTitle} - Episode ${episode}`,
+          url,
+        });
       } else {
         await navigator.clipboard.writeText(url);
         setShowShareToast(true);
@@ -110,7 +123,13 @@ export function VideoPlayer({
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = ((e.clientX - rect.left) / rect.width) * 100;
-    setProgress(Math.max(0, Math.min(100, pct)));
+    const clamped = Math.max(0, Math.min(100, pct));
+    setProgress(clamped);
+
+    const vid = videoRef.current;
+    if (hasRealVideo && vid && vid.duration) {
+      vid.currentTime = (clamped / 100) * vid.duration;
+    }
   };
 
   const hasPrev = episode > 1;
@@ -121,12 +140,27 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={cover}
-        alt={`${dramaTitle} Episode ${episode}`}
-        className="w-full h-full object-cover"
-      />
+      {hasRealVideo ? (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          poster={cover}
+          className="w-full h-full object-contain"
+          playsInline
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={() => setIsPlaying(false)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+        />
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={cover}
+          alt={`${dramaTitle} Episode ${episode}`}
+          className="w-full h-full object-cover"
+        />
+      )}
 
       {/* Lock overlay */}
       {locked && (
@@ -162,7 +196,7 @@ export function VideoPlayer({
       {/* Play overlay */}
       {!locked && !isPlaying && (
         <button
-          onClick={() => setIsPlaying(true)}
+          onClick={togglePlay}
           className="absolute inset-0 flex items-center justify-center"
           aria-label="Play video"
         >
@@ -182,7 +216,7 @@ export function VideoPlayer({
       {!locked && isPlaying && (
         <div
           className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-          onClick={() => setIsPlaying(false)}
+          onClick={togglePlay}
         >
           <div className="w-14 h-14 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center">
             <svg
@@ -268,7 +302,7 @@ export function VideoPlayer({
             </p>
             <div className="flex items-center gap-4 text-xs text-gray-300 mt-0.5">
               <span>
-                {formatTime(currentTime)} / {formatTime(TOTAL_DURATION)}
+                {formatTime(currentTime)} / {formatTime(duration)}
               </span>
               <span>480P</span>
             </div>

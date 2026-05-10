@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Genres: public read, admin write only
+    match /genres/{genreId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Videos (dramas): public read, admin write only
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if false;
+
+      // Episodes subcollection: public read, admin write only
+      match /episodes/{episodeId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // Users: authenticated users can read/write their own doc
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['coins', 'plan']);
+    }
+
+    // Watch history: authenticated read/write own records
+    match /watchHistory/{docId} {
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    // Coin transactions: authenticated read own, no client writes
+    match /coinTransactions/{txId} {
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}
