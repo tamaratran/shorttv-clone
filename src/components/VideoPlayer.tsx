@@ -39,7 +39,7 @@ export function VideoPlayer({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -89,16 +89,23 @@ export function VideoPlayer({
     };
   }, [videoUrl, locked]);
 
-  // Autoplay when video is available
+  // Autoplay when video is available (unmuted preferred)
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid || !hasRealVideo || !blobSrc) return;
-    vid.muted = true;
-    setIsMuted(true);
+    vid.muted = false;
+    setIsMuted(false);
     vid.play().then(() => {
       setIsPlaying(true);
     }).catch(() => {
-      // Autoplay blocked — user will need to click play
+      // Unmuted autoplay blocked by browser — try muted as fallback
+      vid.muted = true;
+      setIsMuted(true);
+      vid.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {
+        // Autoplay completely blocked — user will need to click play
+      });
     });
   }, [hasRealVideo, blobSrc]);
 
@@ -201,7 +208,6 @@ export function VideoPlayer({
           className="w-full h-full object-contain"
           playsInline
           autoPlay
-          muted
           preload="metadata"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
@@ -213,7 +219,6 @@ export function VideoPlayer({
             const err = vid.error;
             if (retryCountRef.current < 3) {
               retryCountRef.current += 1;
-              vid.muted = true;
               vid.load();
               vid.play().catch(() => {});
             } else {
