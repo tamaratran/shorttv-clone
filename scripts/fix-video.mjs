@@ -22,7 +22,7 @@
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { execSync } from "child_process";
+import { execFileSync, spawnSync } from "child_process";
 import { existsSync, mkdirSync, unlinkSync, statSync } from "fs";
 import path from "path";
 
@@ -48,18 +48,16 @@ if (!existsSync(WORK_DIR)) mkdirSync(WORK_DIR, { recursive: true });
  * Check whether the moov atom comes after mdat (needs fixing).
  */
 function needsFix(videoUrl) {
-  try {
-    const trace = execSync(
-      `ffprobe -v trace "${videoUrl}" 2>&1 | grep "type:'m" | head -4`,
-      { timeout: 30000, encoding: "utf-8", shell: true }
-    );
-    const atoms = [...trace.matchAll(/type:'(moov|mdat)'/g)].map((m) => m[1]);
-    if (atoms.length < 2) return false;
-    // Needs fix if mdat appears before moov
-    return atoms.indexOf("mdat") < atoms.indexOf("moov");
-  } catch {
-    return false;
-  }
+  const result = spawnSync(
+    "ffprobe",
+    ["-v", "trace", videoUrl],
+    { timeout: 30000, encoding: "utf-8" }
+  );
+  // ffprobe writes trace output to stderr
+  const output = (result.stdout || "") + (result.stderr || "");
+  const atoms = [...output.matchAll(/type:'(moov|mdat)'/g)].map((m) => m[1]);
+  if (atoms.length < 2) return false;
+  return atoms.indexOf("mdat") < atoms.indexOf("moov");
 }
 
 async function fixEpisode(videoDoc, episodeDoc) {
@@ -83,8 +81,9 @@ async function fixEpisode(videoDoc, episodeDoc) {
 
   try {
     // Re-mux: copy both streams, move moov atom to front
-    execSync(
-      `ffmpeg -y -i "${videoUrl}" -c copy -movflags +faststart "${localOut}"`,
+    execFileSync(
+      "ffmpeg",
+      ["-y", "-i", videoUrl, "-c", "copy", "-movflags", "+faststart", localOut],
       { timeout: 180000, stdio: "pipe" }
     );
 
