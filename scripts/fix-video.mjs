@@ -22,7 +22,7 @@
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { execFileSync } from "child_process";
+import { execFileSync, spawnSync } from "child_process";
 import { existsSync, mkdirSync, unlinkSync, statSync } from "fs";
 import path from "path";
 
@@ -48,23 +48,16 @@ if (!existsSync(WORK_DIR)) mkdirSync(WORK_DIR, { recursive: true });
  * Check whether the moov atom comes after mdat (needs fixing).
  */
 function needsFix(videoUrl) {
-  try {
-    const trace = execFileSync(
-      "ffprobe",
-      ["-v", "trace", videoUrl],
-      { timeout: 30000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
-    );
-    // ffprobe writes trace output to stderr; combine both
-    const atoms = [...trace.matchAll(/type:'(moov|mdat)'/g)].map((m) => m[1]);
-    if (atoms.length < 2) return false;
-    return atoms.indexOf("mdat") < atoms.indexOf("moov");
-  } catch (err) {
-    // execFileSync throws on non-zero exit; stderr is in err.stderr
-    const stderr = err.stderr?.toString() || "";
-    const atoms = [...stderr.matchAll(/type:'(moov|mdat)'/g)].map((m) => m[1]);
-    if (atoms.length < 2) return false;
-    return atoms.indexOf("mdat") < atoms.indexOf("moov");
-  }
+  const result = spawnSync(
+    "ffprobe",
+    ["-v", "trace", videoUrl],
+    { timeout: 30000, encoding: "utf-8" }
+  );
+  // ffprobe writes trace output to stderr
+  const output = (result.stdout || "") + (result.stderr || "");
+  const atoms = [...output.matchAll(/type:'(moov|mdat)'/g)].map((m) => m[1]);
+  if (atoms.length < 2) return false;
+  return atoms.indexOf("mdat") < atoms.indexOf("moov");
 }
 
 async function fixEpisode(videoDoc, episodeDoc) {
