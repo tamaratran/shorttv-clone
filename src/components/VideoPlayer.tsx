@@ -39,6 +39,7 @@ export function VideoPlayer({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -46,14 +47,15 @@ export function VideoPlayer({
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
-  const [videoError, setVideoError] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [prevVideoUrl, setPrevVideoUrl] = useState(videoUrl);
+  const retryCountRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset playback state when video source changes (e.g. episode navigation)
   if (videoUrl !== prevVideoUrl) {
     setPrevVideoUrl(videoUrl);
-    setVideoError(false);
+    setVideoError(null);
     setIsPlaying(false);
     setProgress(0);
     setCurrentTime(0);
@@ -61,6 +63,44 @@ export function VideoPlayer({
   }
 
   const hasRealVideo = !!videoUrl && !locked;
+  const [blobSrc, setBlobSrc] = useState<string | null>(null);
+
+  // Fetch video as blob to avoid streaming errors
+  useEffect(() => {
+    if (!videoUrl || locked) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    retryCountRef.current = 0;
+    fetch(videoUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        if (!cancelled) {
+          objectUrl = URL.createObjectURL(blob);
+          setBlobSrc(objectUrl);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBlobSrc(videoUrl);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setBlobSrc(null);
+    };
+  }, [videoUrl, locked]);
+
+  // Autoplay when video is available
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid || !hasRealVideo || !blobSrc) return;
+    vid.muted = true;
+    setIsMuted(true);
+    vid.play().then(() => {
+      setIsPlaying(true);
+    }).catch(() => {
+      // Autoplay blocked — user will need to click play
+    });
+  }, [hasRealVideo, blobSrc]);
 
   const handleTimeUpdate = useCallback(() => {
     const vid = videoRef.current;
@@ -154,27 +194,47 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {hasRealVideo && !videoError ? (
+      {hasRealVideo && blobSrc && !videoError ? (
         <video
           ref={videoRef}
-          src={videoUrl}
-          poster={cover}
+          src={blobSrc}
           className="w-full h-full object-contain"
           playsInline
+          autoPlay
+          muted
+          preload="metadata"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onError={() => setVideoError(true)}
+          onError={(e) => {
+            const vid = e.currentTarget;
+            const err = vid.error;
+            if (retryCountRef.current < 3) {
+              retryCountRef.current += 1;
+              vid.muted = true;
+              vid.load();
+              vid.play().catch(() => {});
+            } else {
+              setVideoError(err ? `Error ${err.code}: ${err.message}` : 'Failed to load video');
+            }
+          }}
         />
       ) : (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={cover}
-          alt={`${dramaTitle} Episode ${episode}`}
-          className="w-full h-full object-cover"
-        />
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cover}
+            alt={`${dramaTitle} Episode ${episode}`}
+            className="w-full h-full object-cover"
+          />
+          {hasRealVideo && !blobSrc && !videoError && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+          )}
+        </>
       )}
 
       {/* Video error overlay */}
@@ -198,11 +258,20 @@ export function VideoPlayer({
           </p>
           <button
             onClick={() => {
-              setVideoError(false);
+              setVideoError(null);
               setIsPlaying(false);
               setProgress(0);
               setCurrentTime(0);
               setSpeed(1);
+              retryCountRef.current = 0;
+              setBlobSrc(null);
+              // Re-fetch the video as blob
+              if (videoUrl) {
+                fetch(videoUrl)
+                  .then((res) => res.blob())
+                  .then((blob) => setBlobSrc(URL.createObjectURL(blob)))
+                  .catch(() => setBlobSrc(videoUrl));
+              }
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
           >
@@ -243,7 +312,7 @@ export function VideoPlayer({
       )}
 
       {/* Play overlay */}
-      {!locked && !isPlaying && (
+      {!locked && !isPlaying && !videoError && (
         <button
           onClick={togglePlay}
           className="absolute inset-0 flex items-center justify-center"
@@ -262,7 +331,7 @@ export function VideoPlayer({
       )}
 
       {/* Playback controls (visible on hover when playing) */}
-      {!locked && isPlaying && (
+      {!locked && isPlaying && !videoError && (
         <div
           className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
           onClick={togglePlay}
@@ -358,6 +427,32 @@ export function VideoPlayer({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Mute/Unmute button */}
+            {!locked && hasRealVideo && (
+              <button
+                onClick={() => {
+                  const vid = videoRef.current;
+                  if (vid) {
+                    vid.muted = !vid.muted;
+                    setIsMuted(vid.muted);
+                  }
+                }}
+                className="p-1.5 text-white/70 hover:text-white transition-colors"
+                aria-label={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                )}
+              </button>
+            )}
+
             {/* Speed selector */}
             {!locked && (
               <div className="relative">
