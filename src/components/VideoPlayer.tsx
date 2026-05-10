@@ -50,6 +50,7 @@ export function VideoPlayer({
   const [showShareToast, setShowShareToast] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [prevVideoUrl, setPrevVideoUrl] = useState(videoUrl);
+  const [retryKey, setRetryKey] = useState(0);
   const retryCountRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -61,6 +62,7 @@ export function VideoPlayer({
     setProgress(0);
     setCurrentTime(0);
     setDuration(0);
+    retryCountRef.current = 0;
   }
 
   const hasRealVideo = !!videoUrl && !locked;
@@ -83,7 +85,7 @@ export function VideoPlayer({
         // Autoplay completely blocked — user will need to click play
       });
     });
-  }, [hasRealVideo, videoUrl]);
+  }, [hasRealVideo, videoUrl, retryKey]);
 
   const handleTimeUpdate = useCallback(() => {
     const vid = videoRef.current;
@@ -243,12 +245,7 @@ export function VideoPlayer({
               setCurrentTime(0);
               setSpeed(1);
               retryCountRef.current = 0;
-              // Retry by reloading the video element
-              const vid = videoRef.current;
-              if (vid) {
-                vid.load();
-                vid.play().catch(() => {});
-              }
+              setRetryKey((k) => k + 1);
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
           >
