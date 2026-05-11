@@ -44,18 +44,21 @@ export function HomeContent() {
 
         setFeatured(featuredVideos.map(videoToDrama));
 
-        const rows: Genre[] = [];
-        for (const g of genres) {
-          const videos = await fetchVideosByGenre(g.id, 10);
-          if (videos.length > 0) {
-            rows.push({
-              id: g.id,
-              name: g.name,
-              emoji: g.emoji,
-              dramas: videos.map(videoToDrama),
-            });
-          }
-        }
+        const genreResults = await Promise.all(
+          genres.map(async (g) => {
+            const videos = await fetchVideosByGenre(g.id, 10);
+            return { genre: g, videos };
+          })
+        );
+
+        const rows: Genre[] = genreResults
+          .filter((r) => r.videos.length > 0)
+          .map((r) => ({
+            id: r.genre.id,
+            name: r.genre.name,
+            emoji: r.genre.emoji,
+            dramas: r.videos.map(videoToDrama),
+          }));
         setGenreRows(rows);
       } catch (err) {
         console.error("Failed to load home data:", err);

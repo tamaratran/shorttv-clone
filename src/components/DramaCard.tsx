@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Drama } from "@/data/dramas";
 
@@ -10,12 +11,12 @@ export function DramaCard({ drama }: DramaCardProps) {
     <div className="flex-shrink-0 w-[150px] sm:w-[170px]">
       <Link href={`/episode/${drama.slug}`} className="block group">
         <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-[#2a2a2a]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={drama.cover}
             alt={drama.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 150px, 170px"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs text-yellow-400 font-medium">

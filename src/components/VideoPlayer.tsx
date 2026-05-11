@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { useCoins } from "@/context/CoinContext";
@@ -49,9 +50,11 @@ export function VideoPlayer({
   const [showShareToast, setShowShareToast] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [prevVideoUrl, setPrevVideoUrl] = useState(videoUrl);
+  const [retryKey, setRetryKey] = useState(0);
+  const [blobSrc, setBlobSrc] = useState<string | null>(null);
+  const [useBlobFallback, setUseBlobFallback] = useState(false);
+  const blobFallbackRef = useRef(false);
   const retryCountRef = useRef(0);
-  const lastGoodTimeRef = useRef(0);
-  const seekTargetRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset playback state when video source changes (e.g. episode navigation)
@@ -62,23 +65,42 @@ export function VideoPlayer({
     setProgress(0);
     setCurrentTime(0);
     setDuration(0);
+    retryCountRef.current = 0;
+    blobFallbackRef.current = false;
+    setBlobSrc(null);
+    setUseBlobFallback(false);
   }
 
-  useEffect(() => {
-    retryCountRef.current = 0;
-    lastGoodTimeRef.current = 0;
-    seekTargetRef.current = 0;
-  }, [videoUrl]);
-
   const hasRealVideo = !!videoUrl && !locked;
+
+  // Blob fallback: fetch entire video when direct streaming fails
+  useEffect(() => {
+    if (!useBlobFallback || !videoUrl || locked) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    fetch(videoUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        if (!cancelled) {
+          objectUrl = URL.createObjectURL(blob);
+          setBlobSrc(objectUrl);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setVideoError('Failed to load video');
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [useBlobFallback, videoUrl, locked]);
 
   // Autoplay when video is available (unmuted preferred)
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid || !hasRealVideo) return;
-    retryCountRef.current = 0;
-    lastGoodTimeRef.current = 0;
-    seekTargetRef.current = 0;
+    // Wait for blob src if in fallback mode
+    if (useBlobFallback && !blobSrc) return;
     vid.muted = false;
     setIsMuted(false);
     vid.play().then(() => {
@@ -93,18 +115,13 @@ export function VideoPlayer({
         // Autoplay completely blocked — user will need to click play
       });
     });
-  }, [hasRealVideo, videoUrl]);
+  }, [hasRealVideo, videoUrl, retryKey, blobSrc, useBlobFallback]);
 
   const handleTimeUpdate = useCallback(() => {
     const vid = videoRef.current;
     if (!vid || !vid.duration) return;
     setCurrentTime(vid.currentTime);
     setProgress((vid.currentTime / vid.duration) * 100);
-    // Successful playback — track position and reset retry counter
-    lastGoodTimeRef.current = vid.currentTime;
-    if (retryCountRef.current > 0) {
-      retryCountRef.current = 0;
-    }
   }, []);
 
   const handleLoadedMetadata = useCallback(() => {
@@ -192,51 +209,56 @@ export function VideoPlayer({
       ref={containerRef}
       className="relative aspect-[9/16] max-h-[70vh] mx-auto bg-black rounded-lg overflow-hidden group"
     >
-      {hasRealVideo && !videoError ? (
+      {hasRealVideo && !videoError && !(useBlobFallback && !blobSrc) ? (
         <video
           ref={videoRef}
-          src={videoUrl}
+          src={useBlobFallback ? blobSrc! : videoUrl}
           className="w-full h-full object-contain"
           playsInline
           autoPlay
           preload="auto"
           onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={(e) => {
-            handleLoadedMetadata();
-            if (seekTargetRef.current > 0) {
-              e.currentTarget.currentTime = seekTargetRef.current;
-            }
-          }}
+          onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onError={(e) => {
             const vid = e.currentTarget;
             const err = vid.error;
-            const isDecodeError = err?.code === MediaError.MEDIA_ERR_DECODE;
-            if (isDecodeError && retryCountRef.current < 10) {
-              retryCountRef.current += 1;
-              const base = Math.ceil(lastGoodTimeRef.current);
-              seekTargetRef.current = base + retryCountRef.current * 10;
-              vid.load();
-            } else if (!isDecodeError && retryCountRef.current < 3) {
+            if (blobFallbackRef.current) {
+              // Ignore stale errors — blob fetch handles its own errors
+              return;
+            } else if (retryCountRef.current < 2) {
               retryCountRef.current += 1;
               vid.load();
               vid.play().catch(() => {});
             } else {
-              setVideoError(err ? `Error ${err.code}: ${err.message}` : 'Failed to load video');
+              // Direct streaming failed — fall back to blob fetch
+              retryCountRef.current = 0;
+              blobFallbackRef.current = true;
+              setUseBlobFallback(true);
             }
           }}
         />
       ) : (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={cover}
             alt={`${dramaTitle} Episode ${episode}`}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="object-cover"
+            priority
           />
+
         </>
+      )}
+
+      {/* Blob loading spinner */}
+      {useBlobFallback && !blobSrc && !videoError && (
+        <div className="absolute inset-0 bg-black flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
       )}
 
       {/* Video error overlay */}
@@ -266,8 +288,9 @@ export function VideoPlayer({
               setCurrentTime(0);
               setSpeed(1);
               retryCountRef.current = 0;
-              lastGoodTimeRef.current = 0;
-              seekTargetRef.current = 0;
+              setBlobSrc(null);
+              setUseBlobFallback(false);
+              setRetryKey((k) => k + 1);
             }}
             className="bg-[#F6610F] text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-[#d9550d] transition-colors"
           >
