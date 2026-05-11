@@ -3,27 +3,25 @@
 /**
  * Fix video streaming for Firebase Storage videos.
  *
- * Many uploaded videos have the moov atom at the end of the file,
- * which prevents browsers from streaming them properly. Chrome's decoder
- * shows green artifacts and fires PIPELINE_ERROR_DECODE because it
- * cannot locate keyframes until the entire file is downloaded.
- *
- * This script re-muxes each video with -movflags +faststart to move
- * the moov atom before the mdat atom, enabling progressive playback.
- * Video and audio streams are copied without re-encoding.
+ * Many uploaded videos have corrupt frames that cause green pixelation
+ * and PIPELINE_ERROR_DECODE in browsers. This script can either:
+ *   1. Re-mux: move moov atom before mdat (fast, no re-encoding)
+ *   2. Re-encode: fully re-encode with H.264/AAC to fix corrupt frames
  *
  * Usage: GOOGLE_APPLICATION_CREDENTIALS=... node scripts/fix-video.mjs
  *
  * Options:
  *   --dry-run    Check videos without uploading fixes
  *   --all        Process all episodes (default: first episode only)
+ *   --reencode   Re-encode videos with libx264/aac (fixes green artifacts)
+ *   --slug=X     Only process a specific drama by slug
  */
 
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { execFileSync, spawnSync } from "child_process";
-import { existsSync, mkdirSync, unlinkSync, statSync } from "fs";
+import { existsSync, mkdirSync, unlinkSync, statSync, readFileSync, appendFileSync } from "fs";
 import path from "path";
 
 const PROJECT_ID = "shorttv-videos";
@@ -32,6 +30,17 @@ const WORK_DIR = "/tmp/shorttv-video-fix";
 const CONCURRENCY = 3;
 const DRY_RUN = process.argv.includes("--dry-run");
 const ALL_EPISODES = process.argv.includes("--all");
+const REENCODE = process.argv.includes("--reencode");
+const SLUG_FILTER = process.argv.find(a => a.startsWith("--slug="))?.split("=")[1] || null;
+const DONE_LOG = path.join(WORK_DIR, "completed.log");
+
+function loadDone() {
+  if (!existsSync(DONE_LOG)) return new Set();
+  return new Set(readFileSync(DONE_LOG, "utf-8").split("\n").filter(Boolean));
+}
+function markDone(key) {
+  appendFileSync(DONE_LOG, key + "\n");
+}
 
 const app = initializeApp({
   credential: applicationDefault(),
@@ -69,7 +78,13 @@ async function fixEpisode(videoDoc, episodeDoc) {
 
   if (!videoUrl) return { slug, epNum, status: "skipped", reason: "no URL" };
 
-  if (!needsFix(videoUrl)) {
+  const doneKey = `${slug}_ep${epNum}`;
+  const doneSet = loadDone();
+  if (doneSet.has(doneKey)) {
+    return { slug, epNum, status: "skipped", reason: "already processed" };
+  }
+
+  if (!REENCODE && !needsFix(videoUrl)) {
     return { slug, epNum, status: "skipped", reason: "moov already first" };
   }
 
@@ -80,12 +95,14 @@ async function fixEpisode(videoDoc, episodeDoc) {
   const localOut = path.join(WORK_DIR, `${slug}_ep${epNum}_fixed.mp4`);
 
   try {
-    // Re-mux: copy both streams, move moov atom to front
-    execFileSync(
-      "ffmpeg",
-      ["-y", "-i", videoUrl, "-c", "copy", "-movflags", "+faststart", localOut],
-      { timeout: 180000, stdio: "pipe" }
-    );
+    const ffmpegArgs = REENCODE
+      ? ["-y", "-i", videoUrl, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+         "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", localOut]
+      : ["-y", "-i", videoUrl, "-c", "copy", "-movflags", "+faststart", localOut];
+
+    // Re-encode timeout is much longer (10 min vs 3 min)
+    const timeout = REENCODE ? 600000 : 180000;
+    execFileSync("ffmpeg", ffmpegArgs, { timeout, stdio: "pipe" });
 
     if (!existsSync(localOut) || statSync(localOut).size < 1000) {
       return { slug, epNum, status: "error", reason: "output too small" };
@@ -109,6 +126,7 @@ async function fixEpisode(videoDoc, episodeDoc) {
     // Clean up
     if (existsSync(localOut)) unlinkSync(localOut);
 
+    markDone(doneKey);
     return { slug, epNum, status: "success" };
   } catch (err) {
     if (existsSync(localOut)) unlinkSync(localOut);
@@ -122,14 +140,15 @@ async function fixEpisode(videoDoc, episodeDoc) {
 }
 
 async function main() {
-  console.log("=== ShortTV Video Fix (faststart) ===");
-  if (DRY_RUN) console.log("  (dry-run mode — no uploads)\n");
-  else console.log();
+  console.log(`=== ShortTV Video Fix (${REENCODE ? "re-encode" : "faststart"}) ===`);
+  if (DRY_RUN) console.log("  (dry-run mode — no uploads)");
+  if (REENCODE) console.log("  (re-encode mode — full H.264/AAC re-encoding)");
+  if (SLUG_FILTER) console.log(`  (filtering to slug: ${SLUG_FILTER})`);
+  console.log();
 
-  const snapshot = await db
-    .collection("videos")
-    .where("status", "==", "published")
-    .get();
+  let query = db.collection("videos").where("status", "==", "published");
+  if (SLUG_FILTER) query = query.where("slug", "==", SLUG_FILTER);
+  const snapshot = await query.get();
 
   console.log(`Found ${snapshot.size} published videos\n`);
 
