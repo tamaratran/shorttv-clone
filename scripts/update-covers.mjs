@@ -42,7 +42,7 @@ async function main() {
     for (const m of matches.slice(0, 5)) {
       console.log(`  ${m.firestore_slug}: ${m.cover_url.substring(0, 80)}...`);
     }
-    console.log(`  ... and ${matches.length - 5} more`);
+    if (matches.length > 5) console.log(`  ... and ${matches.length - 5} more`);
     return;
   }
 
@@ -52,17 +52,23 @@ async function main() {
   // Process in Firestore batches
   for (let i = 0; i < matches.length; i += BATCH_SIZE) {
     const chunk = matches.slice(i, i + BATCH_SIZE);
-    const batch = db.batch();
-
-    for (const match of chunk) {
-      const ref = db.collection("videos").doc(match.firestore_id);
-      batch.update(ref, {
-        coverUrl: match.cover_url,
-        bannerUrl: match.cover_url,
-      });
-    }
 
     try {
+      const batch = db.batch();
+
+      for (const match of chunk) {
+        if (!match.firestore_id || typeof match.firestore_id !== "string") {
+          console.log(`  SKIP: invalid firestore_id for ${match.firestore_slug}`);
+          totalErrors++;
+          continue;
+        }
+        const ref = db.collection("videos").doc(match.firestore_id);
+        batch.update(ref, {
+          coverUrl: match.cover_url,
+          bannerUrl: match.cover_url,
+        });
+      }
+
       await batch.commit();
       totalSuccess += chunk.length;
       console.log(`  Batch ${Math.floor(i / BATCH_SIZE) + 1}: updated ${chunk.length} docs (total: ${totalSuccess})`);
