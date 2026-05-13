@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "picsum.photos",
       },
+      {
+        protocol: "https",
+        hostname: "akamai-static.shorttv.live",
+        pathname: "/images/**",
+      },
     ],
   },
 };
